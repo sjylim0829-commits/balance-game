@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>영서당 밸런스 게임</title>
+<!-- 이미지 캡처 라이브러리 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  body { font-family: 'Pretendard', sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 20px; }
+  .container { max-width: 600px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+  h1 { text-align: center; color: #2c3e50; font-size: 1.4em; }
+  .section-title { margin-top: 30px; border-bottom: 2px solid #27ae60; padding-bottom: 5px; color: #27ae60; font-weight: bold; }
+  .question-box { margin: 20px 0; }
+  .question-text { font-weight: bold; margin-bottom: 10px; }
+  .options { display: flex; flex-direction: column; gap: 8px; }
+  input[type="radio"] { display: none; }
+  .option-label { display: block; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; cursor: pointer; background: #fafafa; }
+  input[type="radio"]:checked + .option-label { border-color: #3498db; background-color: #ebf5fb; color: #2980b9; font-weight: bold; }
+  .btn { display: block; width: 100%; padding: 15px; font-size: 1.1em; color: #fff; background-color: #3498db; border: none; border-radius: 8px; cursor: pointer; margin-top: 20px; }
+  #result-page { display: none; padding: 20px; }
+  .result-item { margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+  .toast { visibility: hidden; background: rgba(0,0,0,0.8); color: #fff; text-align: center; padding: 15px; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); border-radius: 8px; z-index: 100; }
+  .toast.show { visibility: visible; }
+</style>
+</head>
+<body>
+
+<div class="container" id="capture-area">
+  <!-- 게임 화면 -->
+  <div id="quiz-page">
+    <h1>📚 영서당 밸런스 게임 📚</h1>
+    <div id="questions-container">
+      <!-- 1번부터 10번까지 -->
+      <div class="section-title">📖 책 『모순』 & 삶의 선택 편</div>
+      <div class="question-box"><div class="question-text" id="qt1">1. 내가 살고 싶은 삶의 방향은?</div><div class="options"><label><input type="radio" name="q1" value="A"><span class="option-label">A: 매일 똑같이 굴러가지만 평온하고 안정적인 일상 (조금 지루함)</span></label><label><input type="radio" name="q1" value="B"><span class="option-label">B: 매일매일 새로운 사건이 팡팡 터지는 스펙터클한 일상 (조금 피곤함)</span></label></div></div>
+      <div class="question-box"><div class="question-text" id="qt2">2. 시간을 넘나들 수 있다면 당신의 선택은?</div><div class="options"><label><input type="radio" name="q2" value="A"><span class="option-label">A: 10년 전 과거로 돌아가서 인생 새롭게 다시 살기 (현재 기억 유지)</span></label><label><input type="radio" name="q2" value="B"><span class="option-label">B: 10년 후 미래로 잠깐 가서 내 모습 미리 슬쩍 보고 오기</span></label></div></div>
+      <div class="question-box"><div class="question-text" id="qt3">3. 인간관계에서 갖고 싶은 초능력은?</div><div class="options"><label><input type="radio" name="q3" value="A"><span class="option-label">A: 상대방의 속마음을 100% 읽을 수 있는 능력</span></label><label><input type="radio" name="q3" value="B"><span class="option-label">B: 나의 속마음을 상대방에게 100% 완벽하게 숨길 수 있는 능력</span></label></div></div>
+      
+      <div class="section-title">🏫 슬기로운 교사 생활 편</div>
+      <div class="question-box"><div class="question-text" id="qt4">4. 학교 근무 환경, 당신의 선택은?</div><div class="options"><label><input type="radio" name="q4" value="A"><span class="option-label">A: 왕복 3시간 걸리지만, 업무 스트레스 0%인 평화로운 학교</span></label><label><input type="radio" name="q4" value="B"><span class="option-label">B: 도보 5분 거리지만, 업무 스트레스 최상인 바쁜 학교</span></label></div></div>
+      <div class="question-box"><div class="question-text" id="qt5">5. 담임을 맡게 된다면 어떤 반이 나을까?</div><div class="options"><label><input type="radio" name="q5" value="A"><span class="option-label">A: 말은 진짜 안 듣고 장난꾸러기인데, 나(선생님)를 너무 좋아하는 학생들</span></label><label><input type="radio" name="q5" value="B"><span class="option-label">B: 말은 완벽하게 잘 듣고 모범생인데, 나(선생님)한테 전혀 관심 없는 학생들</span></label></div></div>
+      <div class="question-box"><div class="question-text" id="qt6">6. 로또 1등(약 20억)에 당첨된다면 나의 행보는?</div><div class="options"><label><input type="radio" name="q6" value="A"><span class="option-label">A: "행복했습니다!" 당장 이번 학기까지만 하고 미련 없이 사표 낸다.</span></label><label><input type="radio" name="q6" value="B"><span class="option-label">B: "티 내면 안 돼!" 마음의 평화를 얻은 채 아무렇지 않게 계속 출근한다.</span></label></div></div>
+      
+      <div class="section-title">🍉 여름 & 일상 취향 편</div>
+      <div class="question-box"><div class="question-text" id="qt7">7. 이번 여름휴가, 나의 힐링 스타일은?</div><div class="options"><label><input type="radio" name="q7" value="A"><span class="option-label">A: 에어컨 빵빵한 호텔이나 집에서 넷플릭스 보며 뒹굴기 (휴식파)</span></label><label><input type="radio" name="q7" value="B"><span class="option-label">B: 여름엔 땀 흘려야지! 산으로 바다로 떠나기 (활동파)</span></label></div></div>
+      <div class="question-box"><div class="question-text" id="qt8">8. 둘 중 하나만 가질 수 있는 체질이 된다면?</div><div class="options"><label><input type="radio" name="q8" value="A"><span class="option-label">A: 아무리 많이 먹어도 절대 살이 안 찌는 체질</span></label><label><input type="radio" name="q8" value="B"><span class="option-label">B: 아무리 밤을 새워도 절대 피곤하지 않은 체질</span></label></div></div>
+      <div class="question-box"><div class="question-text" id="qt9">9. 연락할 때 나의 선호도는?</div><div class="options"><label><input type="radio" name="q9" value="A"><span class="option-label">A: "글로 언제 다 쳐요?" 용건은 빠르고 확실하게 전화 통화!</span></label><label><input type="radio" name="q9" value="B"><span class="option-label">B: "전화는 부담스러워요." 생각할 시간이 있는 텍스트(카톡/문자)!</span></label></div></div>
+      
+      <div class="section-title">📚 독서 모임 맞춤 편</div>
+      <div class="question-box"><div class="question-text" id="qt10">10. 책을 읽을 때 나의 독서 스타일은?</div><div class="options"><label><input type="radio" name="q10" value="A"><span class="option-label">A: 너무 재미있어서 뒷내용이 궁금해 밤을 새워서라도 단숨에 끝까지 다 읽기</span></label><label><input type="radio" name="q10" value="B"><span class="option-label">B: 좋은 문장을 곱씹고 필사하며 한 달 내내 아주 천천히 음미하며 읽기</span></label></div></div>
+    </div>
+    <button class="btn" onclick="submitGame()">결과 보기</button>
+  </div>
+
+  <!-- 결과 화면 -->
+  <div id="result-page">
+    <h1>🎉 나의 밸런스 결과 🎉</h1>
+    <div id="result-content"></div>
+    <button class="btn" style="background-color:#27ae60;" onclick="copyResultAsImage()">📋 결과 이미지 복사하기</button>
+    <button class="btn" style="background-color:#95a5a6;" onclick="location.reload()">다시 하기</button>
+  </div>
+</div>
+
+<div id="toast" class="toast">이미지가 클립보드에 복사되었습니다!</div>
+
+<script>
+  function submitGame() {
+    let resultsHTML = "<h3>영서당 밸런스 결과</h3>";
+    for (let i = 1; i <= 10; i++) {
+      const selected = document.querySelector(`input[name="q${i}"]:checked`);
+      if (!selected) {
+        alert(i + "번 문항을 선택해주세요!");
+        return;
+      }
+      const qText = document.getElementById('qt'+i).innerText;
+      const aText = selected.nextElementSibling.innerText;
+      resultsHTML += `<div class="result-item"><b>${qText}</b><br>${aText}</div>`;
+    }
+    document.getElementById("quiz-page").style.display = "none";
+    document.getElementById("result-page").style.display = "block";
+    document.getElementById("result-content").innerHTML = resultsHTML;
+  }
+
+  async function copyResultAsImage() {
+    const area = document.getElementById("result-page");
+    const canvas = await html2canvas(area, { backgroundColor: "#ffffff", scale: 2 });
+    canvas.toBlob(async (blob) => {
+      try {
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+        const t = document.getElementById("toast");
+        t.className = "toast show";
+        setTimeout(() => { t.className = "toast"; }, 3000);
+      } catch (e) {
+        alert("이미지 복사에 실패했습니다. 브라우저 권한을 확인해주세요.");
+      }
+    });
+  }
+</script>
+</body>
+</html>

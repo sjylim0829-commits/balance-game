@@ -18,9 +18,9 @@
   .option-label { display: block; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; cursor: pointer; background: #fafafa; }
   input[type="radio"]:checked + .option-label { border-color: #3498db; background-color: #ebf5fb; color: #2980b9; font-weight: bold; }
   .btn { display: block; width: 100%; padding: 15px; font-size: 1.1em; color: #fff; background-color: #3498db; border: none; border-radius: 8px; cursor: pointer; margin-top: 20px; }
-  #result-page { display: none; padding: 20px; }
+  #result-page { display: none; padding: 20px; background-color: #ffffff; }
   .result-item { margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
-  .toast { visibility: hidden; background: rgba(0,0,0,0.8); color: #fff; text-align: center; padding: 15px; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); border-radius: 8px; z-index: 100; }
+  .toast { visibility: hidden; background: rgba(0,0,0,0.8); color: #fff; text-align: center; padding: 15px; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); border-radius: 8px; z-index: 100; font-size: 0.9em; width: 80%; max-width: 300px; }
   .toast.show { visibility: visible; }
 </style>
 </head>
@@ -31,7 +31,7 @@
   <div id="quiz-page">
     <h1>📚 영서당 밸런스 게임 📚</h1>
     <div id="questions-container">
-      <!-- 1번부터 10번까지 -->
+      
       <div class="section-title">📖 책 『모순』 & 삶의 선택 편</div>
       <div class="question-box"><div class="question-text" id="qt1">1. 내가 살고 싶은 삶의 방향은?</div><div class="options"><label><input type="radio" name="q1" value="A"><span class="option-label">A: 매일 똑같이 굴러가지만 평온하고 안정적인 일상 (조금 지루함)</span></label><label><input type="radio" name="q1" value="B"><span class="option-label">B: 매일매일 새로운 사건이 팡팡 터지는 스펙터클한 일상 (조금 피곤함)</span></label></div></div>
       <div class="question-box"><div class="question-text" id="qt2">2. 시간을 넘나들 수 있다면 당신의 선택은?</div><div class="options"><label><input type="radio" name="q2" value="A"><span class="option-label">A: 10년 전 과거로 돌아가서 인생 새롭게 다시 살기 (현재 기억 유지)</span></label><label><input type="radio" name="q2" value="B"><span class="option-label">B: 10년 후 미래로 잠깐 가서 내 모습 미리 슬쩍 보고 오기</span></label></div></div>
@@ -55,18 +55,29 @@
 
   <!-- 결과 화면 -->
   <div id="result-page">
-    <h1>🎉 나의 밸런스 결과 🎉</h1>
+    <h1 style="margin-bottom: 20px;">🎉 나의 밸런스 결과 🎉</h1>
     <div id="result-content"></div>
-    <button class="btn" style="background-color:#27ae60;" onclick="copyResultAsImage()">📋 결과 이미지 복사하기</button>
-    <button class="btn" style="background-color:#95a5a6;" onclick="location.reload()">다시 하기</button>
+    
+    <!-- 캡처 시 버튼을 안 보이게 하기 위해 id 부여 -->
+    <div id="action-buttons">
+      <button class="btn" style="background-color:#27ae60;" onclick="shareOrCopyImage()">📲 결과 이미지 공유 / 저장</button>
+      <button class="btn" style="background-color:#95a5a6;" onclick="location.reload()">다시 하기</button>
+    </div>
   </div>
 </div>
 
-<div id="toast" class="toast">이미지가 클립보드에 복사되었습니다!</div>
+<div id="toast" class="toast">안내 메시지</div>
 
 <script>
+  function showToast(message) {
+    const t = document.getElementById("toast");
+    t.innerText = message;
+    t.className = "toast show";
+    setTimeout(() => { t.className = "toast"; }, 3000);
+  }
+
   function submitGame() {
-    let resultsHTML = "<h3>영서당 밸런스 결과</h3>";
+    let resultsHTML = "";
     for (let i = 1; i <= 10; i++) {
       const selected = document.querySelector(`input[name="q${i}"]:checked`);
       if (!selected) {
@@ -75,26 +86,64 @@
       }
       const qText = document.getElementById('qt'+i).innerText;
       const aText = selected.nextElementSibling.innerText;
-      resultsHTML += `<div class="result-item"><b>${qText}</b><br>${aText}</div>`;
+      resultsHTML += `<div class="result-item"><b style="color:#2c3e50;">${qText}</b><br><span style="color:#d35400; font-weight:bold;">${aText}</span></div>`;
     }
     document.getElementById("quiz-page").style.display = "none";
     document.getElementById("result-page").style.display = "block";
     document.getElementById("result-content").innerHTML = resultsHTML;
+    window.scrollTo(0, 0); // 화면 맨 위로 이동
   }
 
-  async function copyResultAsImage() {
+  async function shareOrCopyImage() {
     const area = document.getElementById("result-page");
-    const canvas = await html2canvas(area, { backgroundColor: "#ffffff", scale: 2 });
-    canvas.toBlob(async (blob) => {
-      try {
-        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-        const t = document.getElementById("toast");
-        t.className = "toast show";
-        setTimeout(() => { t.className = "toast"; }, 3000);
-      } catch (e) {
-        alert("이미지 복사에 실패했습니다. 브라우저 권한을 확인해주세요.");
-      }
-    });
+    const btns = document.getElementById("action-buttons");
+    
+    // 이미지 캡처 전 화면에서 버튼 숨기기 (깔끔한 캡처를 위해)
+    btns.style.display = "none";
+    
+    try {
+      const canvas = await html2canvas(area, { backgroundColor: "#ffffff", scale: 2 });
+      
+      canvas.toBlob(async (blob) => {
+        // 모바일 환경: Web Share API (카카오톡, 이미지 저장 등 네이티브 공유 창)
+        const file = new File([blob], "balance_result.png", { type: "image/png" });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: '영서당 밸런스 게임 결과',
+            });
+            return; // 공유 성공 시 여기서 종료
+          } catch (e) {
+            console.log("공유 취소됨");
+          }
+        }
+        
+        // PC 환경: 클립보드 복사 시도
+        try {
+          const item = new ClipboardItem({ "image/png": blob });
+          await navigator.clipboard.write([item]);
+          showToast("이미지가 복사되었습니다! 채팅방에 붙여넣기(Ctrl+V) 해주세요.");
+        } catch (e) {
+          // 위 두 방법이 모두 안될 때 (특정 브라우저): 강제 다운로드 방식 적용
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = "영서당_결과.png";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          showToast("결과 이미지가 기기에 다운로드되었습니다.");
+        }
+      }, "image/png");
+      
+    } catch (e) {
+      alert("이미지를 생성하는 데 실패했습니다.");
+    } finally {
+      // 캡처 후 다시 버튼 보이기
+      btns.style.display = "block";
+    }
   }
 </script>
 </body>

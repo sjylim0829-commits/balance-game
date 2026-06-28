@@ -56,7 +56,7 @@
       <div class="section-title">📚 독서 모임 맞춤 편</div>
       <div class="question-box"><div class="question-text" id="qt10">10. 책을 읽을 때 나의 독서 스타일은?</div><div class="options"><label><input type="radio" name="q10" value="A"><span class="option-label">A: 너무 재미있어서 뒷내용이 궁금해 밤을 새워서라도 단숨에 끝까지 다 읽기</span></label><label><input type="radio" name="q10" value="B"><span class="option-label">B: 좋은 문장을 곱씹고 필사하며 한 달 내내 아주 천천히 음미하며 읽기</span></label></div></div>
     </div>
-    <button class="btn" onclick="submitGame()">결과 보기</button>
+    <button type="button" class="btn" onclick="submitGame()">결과 보기</button>
   </div>
 
   <div id="result-page">
@@ -64,5 +64,102 @@
     <div id="result-content"></div>
     
     <div id="action-buttons">
-      <button class="btn" style="background-color:#27ae60;" onclick="createImage()">📲 결과 이미지로 저장 / 공유하기</button>
-      <button class="btn
+      <button type="button" class="btn" style="background-color:#27ae60;" onclick="createImage()">📲 결과 이미지로 저장 / 공유하기</button>
+      <button type="button" class="btn" style="background-color:#95a5a6;" onclick="location.reload()">다시 하기</button>
+    </div>
+  </div>
+</div>
+
+<div id="image-modal">
+  <p>👇 <b>아래 이미지를 꾹 누르면</b> 👇<br>사진첩에 저장하거나 복사할 수 있습니다!</p>
+  <img id="captured-image" src="" alt="결과 이미지">
+  <button type="button" class="btn-close" onclick="closeModal()">닫기</button>
+</div>
+
+<script>
+  function submitGame() {
+    try {
+      let resultsHTML = "";
+      for (let i = 1; i <= 10; i++) {
+        // 선택된 라디오 버튼 찾기
+        const selected = document.querySelector('input[name="q' + i + '"]:checked');
+        
+        if (!selected) {
+          alert(i + "번 문항을 아직 안 고르셨어요!");
+          return;
+        }
+        
+        // 질문과 답변 텍스트 가져오기 (안드로이드 호환성을 위해 가장 직관적인 구조로 변경)
+        const qText = document.getElementById('qt'+i).innerText;
+        // nextElementSibling이 모바일에서 가끔 꼬이는 걸 방지해 부모 요소에서 명확히 span을 찾도록 수정
+        const aText = selected.parentElement.querySelector('.option-label').innerText;
+        
+        resultsHTML += '<div class="result-item"><b style="color:#2c3e50;">' + qText + '</b><br><span style="color:#d35400; font-weight:bold;">' + aText + '</span></div>';
+      }
+      
+      // 화면 전환
+      document.getElementById("quiz-page").style.display = "none";
+      document.getElementById("result-page").style.display = "block";
+      document.getElementById("result-content").innerHTML = resultsHTML;
+      
+      // 안드로이드 화면 전환 시 스크롤 안 올라가는 현상 방지
+      setTimeout(function() {
+        window.scrollTo(0, 0);
+      }, 50);
+      
+    } catch (error) {
+      // 이제 화면이 멈추면 왜 멈췄는지 원인을 띄워줍니다!
+      alert("앗, 결과 화면으로 넘어가는 중 문제가 생겼습니다.\n오류내용: " + error.message);
+    }
+  }
+
+  async function createImage() {
+    const area = document.getElementById("result-page");
+    const btns = document.getElementById("action-buttons");
+    
+    btns.style.display = "none";
+    
+    try {
+      const canvas = await html2canvas(area, { backgroundColor: "#ffffff", scale: 2 });
+      const dataUrl = canvas.toDataURL("image/png");
+      
+      canvas.toBlob(async (blob) => {
+        const file = new File([blob], "balance_result.png", { type: "image/png" });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: '영서당 밸런스 게임 결과'
+            });
+            btns.style.display = "block";
+            return; 
+          } catch (e) {
+            console.log("공유 취소됨");
+          }
+        }
+        
+        // 공유 API 실패 시 무조건 이미지 팝업 모달 띄우기
+        showImageModal(dataUrl);
+
+      }, "image/png");
+      
+    } catch (e) {
+      alert("이미지를 생성하는 데 실패했습니다.");
+    } finally {
+      btns.style.display = "block";
+    }
+  }
+
+  function showImageModal(dataUrl) {
+    const modal = document.getElementById("image-modal");
+    const img = document.getElementById("captured-image");
+    img.src = dataUrl;
+    modal.style.display = "flex";
+  }
+
+  function closeModal() {
+    document.getElementById("image-modal").style.display = "none";
+  }
+</script>
+</body>
+</html>
